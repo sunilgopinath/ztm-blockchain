@@ -1,72 +1,91 @@
-# ZTM Hardhat Project
+# 🪙 ETH-Backed Stablecoin System
 
-## Getting Started
+This project implements a simple, fully on-chain ETH-backed stablecoin system using Solidity. It features dynamic minting and burning, protocol-level collateral buffer support, and a fee mechanism — all powered by a fixed-point arithmetic library and a mock oracle.
 
-```sh
-$> npm install --global hardhat-shorthand
+---
+
+## 📦 Contracts
+
+### `Stablecoin.sol`
+An ERC-20 compliant stablecoin contract (STC) that allows users to:
+- **Mint** STC by depositing ETH at the oracle-defined price (minus a configurable fee).
+- **Burn** STC to redeem ETH based on the current oracle price (also minus a fee).
+- **Deposit ETH** as surplus collateral and receive `DepositorCoin` (DPC) tokens.
+- **Withdraw** ETH from the surplus buffer by burning DPC, subject to a time lock and availability.
+
+### `DepositorCoin.sol`
+A secondary ERC-20 token representing ownership of surplus ETH in the system. Users receive DPC when they deposit more ETH than needed to cover system liabilities and can later redeem it.
+
+### `Oracle.sol`
+A mock price oracle that allows manual setting of the ETH/USD price. In a production environment, this would be replaced by Chainlink or another decentralized oracle provider.
+
+### `FixedPoint.sol`
+A lightweight fixed-point math library for accurate token issuance and pricing calculations using 18-decimal precision.
+
+---
+
+## ⚙️ System Mechanics
+
+### 🔄 Minting
+Users can mint STC by sending ETH to the contract. The amount minted is:
+
+```solidity
+(STC minted) = (ETH sent - fee) * oracle price
 ```
 
-## Running Tests
+### 🔥 Burning
+Users can burn their STC to withdraw ETH from the contract. The amount of ETH received is:
 
-```sh
-❯ hh test
-
-
-  ECR20
-    ✔ should transfer tokens between accounts (402ms)
-
-
-  1 passing (405ms)
+```solidity
+(ETH refunded) = (STC burned / oracle price) - fee
 ```
 
-### Mocks
 
-In order to run the tests we are utilzing mock testing which requires the deployment of a mock contract /contracts/mocks/ERC20Mock.sol
+### 💰 Collateral Buffer
+- Users can deposit ETH into the system when it is under-collateralized or to add surplus.
+- If the system has a **surplus**, the user receives DPC tokens in return.
+- If the system is **under-collateralized**, the user must restore the deficit **plus** meet an initial collateral ratio to receive DPC.
 
-## Deploying the contract
+### 🔐 Withdrawing Buffer
+- DPC holders can burn tokens to withdraw ETH **only if there is a surplus**.
+- Withdrawals are locked until the configured `unlockTime` has passed (default: 1 day).
 
-```sh
-$> hh ignition deploy ./ignition/modules/ERC20.ts --network sepolia
-> ✔ Confirm deploy to network sepolia (11155111)? … yes
-Hardhat Ignition 🚀
+---
 
-Deploying [ ERC20Module ]
+## ✅ Features Covered by Tests
 
-Batch #1
-  Executed ERC20Module#ERC20
+- ✅ Minting and burning of STC
+- ✅ Fee logic on both mint and burn
+- ✅ Oracle-driven price mechanics
+- ✅ Collateral deficit/surplus handling
+- ✅ DepositorCoin issuance and redemption
+- ✅ Time-locked collateral buffer withdrawals
+- ✅ Robust reverts for edge cases and misuse
 
-[ ERC20Module ] successfully deployed 🚀
+---
 
-Deployed Addresses
+## 🧪 Testing
 
-ERC20Module#ERC20 - 0x3408c075751172805ff6cCEcb830E2A1780C7C93
+The project includes a full Hardhat test suite written in TypeScript using:
+- `chai` for assertions
+- `ethers.js` v6
+- `@nomicfoundation/hardhat-network-helpers` for fixture setup and time manipulation
+
+Run tests with:
+```bash
+npx hardhat test
 ```
 
-### Set Environment variables
+## 🛠️ To Do
+- Integrate a live oracle like Chainlink
+- Add a frontend to interact with the stablecoin system
+- Enhance support for multiple collateral types
+- Add automated collateral ratio rebalancing logic
 
-```sh
-$> hh vars set PRIVATE_KEY
-$> hh vars set ETHERSCAN_API_KEY
-$> hh vars set SEPOLIA_RPC_URL
-```
-
-### Verify
-
-```sh
-$> hh verify --network sepolia 0x3408c075751172805ff6cCEcb830E2A1780C7C93 MyToken SYM 18
-[INFO] Sourcify Verification Skipped: Sourcify verification is currently disabled. To enable it, add the following entry to your Hardhat configuration:
-
-sourcify: {
-  enabled: true
-}
-
-Or set 'enabled' to false to hide this message.
-
-For more information, visit https://hardhat.org/hardhat-runner/plugins/nomicfoundation-hardhat-verify#verifying-on-sourcify
-Successfully submitted source code for contract
-contracts/ERC20.sol:ERC20 at 0x3408c075751172805ff6cCEcb830E2A1780C7C93
-for verification on the block explorer. Waiting for verification result...
-
-Successfully verified contract ERC20 on the block explorer.
-https://sepolia.etherscan.io/address/0x3408c075751172805ff6cCEcb830E2A1780C7C93#code
-```
+## 🧠 Learning Goals
+- This project was designed to deepen understanding of:
+- Custom ERC20 token systems
+- Fixed-point arithmetic in Solidity
+- Smart contract fee models
+- Protocol-level collateralization
+- Solidity test-driven development with Hardhat + TypeScript
