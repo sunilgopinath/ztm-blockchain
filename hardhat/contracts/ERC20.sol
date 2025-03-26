@@ -1,8 +1,8 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-// Uncomment this line to use console.log
-// import "hardhat/console.sol";
+import {console} from "hardhat/console.sol";
+
 contract ERC20 {
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(
